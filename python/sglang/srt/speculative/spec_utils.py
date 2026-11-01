@@ -439,7 +439,8 @@ def record_stream_each(tensors, stream):
             _RECORD_STREAM_UNSUPPORTED.add(device_type)
             logger.warning(
                 "record_stream is not implemented for %s tensors; spec-v2 verify "
-                "tensors on this device are not recorded on the forward stream.",
+                "tensors are not recorded on the forward stream, so the allocator "
+                "may reuse memory that stream still reads.",
                 device_type,
             )
 

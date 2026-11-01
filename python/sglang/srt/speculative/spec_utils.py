@@ -417,13 +417,13 @@ def fill_draft_window_rail(
 
 
 def record_stream_each(tensors, stream):
-    """Call record_stream(stream) on each cuda tensor in `tensors`, skipping
-    non-tensor / non-cuda entries. Tells the caching allocator that the
+    """Call record_stream(stream) on each device tensor in `tensors`, skipping
+    non-tensor / host entries. Tells the caching allocator that the
     tensors are also used on `stream`, so memory is not recycled while
     queued work is still in flight after Python refs drop.
     """
     for t in tensors:
-        if isinstance(t, torch.Tensor) and t.is_cuda:
+        if isinstance(t, torch.Tensor) and t.device.type != "cpu":
             t.record_stream(stream)
 
 

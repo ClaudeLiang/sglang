@@ -416,6 +416,12 @@ def fill_draft_window_rail(
             row.copy_(runner_ids.ids_in(IdSpaceKind.SLIDING_WINDOW, row))
 
 
+# Device types with no aten::record_stream kernel (an out-of-tree backend that
+# does not register one). Their tensors are skipped, as the old CUDA-only filter
+# skipped them, instead of failing every verify step.
+_RECORD_STREAM_UNSUPPORTED: set = set()
+
+
 def record_stream_each(tensors, stream):
     """Call record_stream(stream) on each device tensor in `tensors`, skipping
     non-tensor / host entries. Tells the caching allocator that the
@@ -423,8 +429,20 @@ def record_stream_each(tensors, stream):
     queued work is still in flight after Python refs drop.
     """
     for t in tensors:
-        if isinstance(t, torch.Tensor) and t.device.type != "cpu":
+        if not isinstance(t, torch.Tensor):
+            continue
+        device_type = t.device.type
+        if device_type == "cpu" or device_type in _RECORD_STREAM_UNSUPPORTED:
+            continue
+        try:
             t.record_stream(stream)
+        except NotImplementedError:
+            _RECORD_STREAM_UNSUPPORTED.add(device_type)
+            logger.warning(
+                "record_stream is not implemented for %s tensors; spec-v2 verify "
+                "tensors on this device are not recorded on the forward stream.",
+                device_type,
+            )
 
 
 def record_stream_for_v2_verify(batch, verify_input, fwd_stream):

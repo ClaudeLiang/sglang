@@ -416,10 +416,9 @@ def fill_draft_window_rail(
             row.copy_(runner_ids.ids_in(IdSpaceKind.SLIDING_WINDOW, row))
 
 
-# Device types with no aten::record_stream kernel (an out-of-tree backend that
-# does not register one). Their tensors are skipped, as the old CUDA-only filter
-# skipped them, instead of failing every verify step.
-_RECORD_STREAM_UNSUPPORTED: set = set()
+# Device types with no aten::record_stream kernel (an out-of-tree backend may
+# register none); their tensors are skipped instead of failing every verify step.
+_RECORD_STREAM_UNSUPPORTED: set[str] = set()
 
 
 def record_stream_each(tensors, stream):
